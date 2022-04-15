@@ -1,1 +1,0 @@
-npx zenn new:article
