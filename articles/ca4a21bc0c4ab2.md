@@ -1,5 +1,5 @@
 ---
-title: "symfony初心者がメールテンプレを使用しているときにファイルを添付させたら色々大変だった話"
+title: "symfony初心者がメール送信機能を実装したら大変だった話"
 emoji: "🎶"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: [symfony]
