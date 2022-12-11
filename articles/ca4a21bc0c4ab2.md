@@ -1,5 +1,5 @@
 ---
-title: "symfony初心者がメールのテンプレを外部ファイルに切り出してファイルを添付させた時にエラーで苦労した話"
+title: "symfony初心者がメールのテンプレを外部ファイルに切り出してファイルを添付させて送信したら大変だった"
 emoji: "🎶"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: [symfony]
@@ -9,12 +9,12 @@ published_at: 2022-12-18 00:01
 
 # はじめに
 
-初めましてのフレームワークは呪文が多くて覚えるが大変です。
-今回メール送信を実装する機会がありスラスラ実装できなくてしんどかったのでその時のメモを残しておきます。
+実務でメール送信を実装する機会がありました。
+スラスラ実装できなくてしんどかったのでその時のメモを残しておきます。
 
-# 今回の記事のゴール
+# 今回のゴール
 
-メールのテンプレを外部ファイルに切り出しファイルを添付してメッセンジャーのキューへ送信する所までをゴールとします。
+問い合わせフォームから送信された内容を外部ファイルに切り出したメールテンプレートに埋め込み、ファイルを添付してメッセンジャーのキューへ送信する所までをゴールとします。
 https://github.com/ritogk/symfony_mail_test
 
 # 動作環境
@@ -27,6 +27,7 @@ symfony 6.2
 # とりあえず単純なテキストメールを送信してみる
 
 symfony を使ってメールを送信した事がないので[公式ドキュメント](https://symfony.com/doc/current/mailer.html)を頼りに単純なテキストメールを送信してみる
+https://symfony.com/doc/current/mailer.html
 
 symfony_mailer を インストール
 
@@ -76,16 +77,16 @@ class MailerController extends AbstractController
 
 messenger_messages テーブルがないと怒られました。
 
+migrations ディレクトリ内に「messenger_messages」のテーブル定義は存在しないしデータベース内にも存在しない。
+なにこれどうすればいいの・・・？
+
 ```bash
 MariaDB [symfony_mailer]> show tables;
 Empty set (0.000 sec)
 ```
 
-migrations ディレクトリ内に「messenger_messages」テーブル定義は存在しませんしデータベース内にも存在しない。
-なにこれどうすればいいの・・・？
-
 調べてみるとメッセンジャーを動かせば自動でテーブルが作られるらしい。
-[https://github.com/symfony/symfony/issues/46609](https://github.com/symfony/symfony/issues/46609)
+https://github.com/symfony/symfony/issues/46609
 
 メッセンジャーをインストール
 
@@ -99,7 +100,7 @@ $ composer require symfony/messenger
 $ php bin/console messenger:consume async
 ```
 
-「An exception occurred while executing a query: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'symfony_mailer.messenger_messages' doesn't exist」
+**「An exception occurred while executing a query: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'symfony_mailer.messenger_messages' doesn't exist」**
 ![2](/images/symfony/2.png)
 
 また似たような内容で怒られました。
@@ -142,9 +143,9 @@ Symfony Profiler で確認するとメッセンジャーのキューにメール
 
 # 問い合わせフォームを作成する
 
-メールが送信できたので問い合わせフォームを作っていきます。
+お次は問い合わせフォームを作っていきます。
 
-フォームと symfony の連携周りの話は mako5656 さんの記事で事足りるので割愛させていただきます。
+フォームと symfony の連携周りの話は [mako10](https://qiita.com/mako5656https://qiita.com/mako5656) さんの記事で事足りるので割愛させていただきます。
 https://qiita.com/mako5656/items/85b18f8e8fb8cb622f2b
 https://qiita.com/mako5656/items/0b6c28901cf0f7edeeaa
 
@@ -184,6 +185,9 @@ class ContactModel
 {
 
   protected $contactContent;
+  /**
+   * @var UploadedFile[]
+   */
   private array $image = [];
 
   public function getContactContent(): string
@@ -196,11 +200,17 @@ class ContactModel
     $this->contactContent = $contactContent;
   }
 
+  /**
+  * @return UploadedFile[]
+  */
   public function getImage(): array
   {
     return $this->image;
   }
 
+  /**
+  * @param UploadedFile[] $image
+  */
   public function setImage(array $image): self
   {
     $this->image = $image;
@@ -258,7 +268,7 @@ class ContactType extends AbstractType
 「/contact」にアクセスするとフォームが表示されます。
 ![4](/images/symfony/4.png)
 
-# twig のメールテンプレートを使ってメールを送信する
+# メールテンプレートを使ってメールを送信する
 
 公式ドキュメントを頼りに処理を実装します。
 https://symfony.com/doc/current/mailer.html#text-content
@@ -329,6 +339,7 @@ class ContactController extends AbstractController
 ![5](/images/symfony/5.png)
 
 メール送信時に UploadedFile がシリアライズできずにエラーが発生しました。
+
 UploadedFile はシリアライズしちゃだめらしいですね。
 https://github.com/symfony/symfony/issues/7238
 
@@ -339,13 +350,13 @@ https://runebook.dev/ja/docs/symfony/symfony/component/httpfoundation/file/uploa
 
 # UploadedFile のシリアライズはどこでされている?
 
-調べるとメールテンプレの twig にコンテキストを渡している所でシリアライズ化されているらしい。
+調べるとメールテンプレの twig にコンテキストを渡している所でシリアライズされるらしいです。
 公式ドキュメントをよく見るとシリアライズできる物のみ渡せと書いてありますね。
 ![6](/images/symfony/6.png)
 
 公式ドキュメント通りにファイルをシリアライズの対象から外してみる。
 
-```php
+```php:ContactModel.php
 <?php
 
 namespace App\Form\Model;
@@ -365,6 +376,9 @@ class ContactModel
   }
 
   protected $contactContent;
+  /**
+   * @var UploadedFile[]
+   */
   private array $image = [];
 
   public function getContactContent(): string
@@ -377,11 +391,17 @@ class ContactModel
     $this->contactContent = $contactContent;
   }
 
+  /**
+  * @return UploadedFile[]
+  */
   public function getImage(): array
   {
     return $this->image;
   }
 
+  /**
+  * @param UploadedFile[] $image
+  */
   public function setImage(array $image): self
   {
     $this->image = $image;
@@ -390,9 +410,10 @@ class ContactModel
 }
 ```
 
-この状態で「/contact」に post リクエストを送ると正常に送信できました！
+この状態で「/contact」に post リクエストを送ると・・・・
+正常に送信できました！
 
-キューにメールテンプレ通りの内容が送信されていておりファイルも添付されています。
+キューにテンプレに通りの内容が送信されていておりファイルも添付されています。
 ![7](/images/symfony/7.png)
 
 # 最後に
