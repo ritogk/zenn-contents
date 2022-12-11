@@ -7,6 +7,8 @@ published: true
 published_at: 2022-12-18 00:01
 ---
 
+[Symfony Advent Calendar 2022](https://qiita.com/advent-calendar/2022/symfony) 18 日目の記事です ✨
+
 # はじめに
 
 実務でメール送信を実装する機会がありました。
