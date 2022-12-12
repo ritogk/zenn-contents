@@ -12,7 +12,7 @@ published_at: 2022-12-18 00:01
 # はじめに
 
 実務で symfony を使ってメール送信を実装する機会がありました。
-その時にスラスラ実装できなくてしんどかったのでその時のメモを残しておきます。
+その時にスラスラ実装できなくてしんどい思いをしたのでつまりポイント等をまとめてました。
 
 # 今回のゴール
 
@@ -31,13 +31,13 @@ symfony 6.2
 symfony を使ってメールを送信した事がないので[公式ドキュメント](https://symfony.com/doc/current/mailer.html)を頼りに単純なテキストメールを送信してみる
 https://symfony.com/doc/current/mailer.html
 
-symfony_mailer を インストール
+symfony_mailer の インストールを行います。
 
 ```bash
 $ composer require symfony/mailer
 ```
 
-今回の記事ではメールを送信しないのでメーラーの指定はしない。
+今回の記事ではメールを送信しないのでメーラーの指定は行いません。
 
 ```:.env
 MAILER_DSN=null://null
@@ -79,18 +79,19 @@ class MailerController extends AbstractController
 
 messenger_messages テーブルがないと怒られました。
 
-migrations ディレクトリ内に「messenger_messages」のテーブル定義は存在しないしデータベース内にも存在しない。
-なにこれどうすればいいの・・・？
+migrations ディレクトリ内に「messenger_messages」のテーブル定義は存在しませんしデータベース内にも存在しません。
 
 ```bash
 MariaDB [symfony_mailer]> show tables;
 Empty set (0.000 sec)
 ```
 
-調べてみるとメッセンジャーを動かせば自動でテーブルが作られるらしい。
+なにこれどうすればいいの・・・？
+
+調べてみるとメッセンジャーを動かせば自動でテーブルが作られるらしいです。
 https://github.com/symfony/symfony/issues/46609
 
-メッセンジャーをインストール
+メッセンジャーのインストールを行います。
 
 ```bash
 $ composer require symfony/messenger
@@ -106,8 +107,9 @@ $ php bin/console messenger:consume async
 ![2](/images/symfony/2.png)
 
 また似たような内容で怒られました。
-調べてみるとデフォルトの状態だとメッセンジャーで必要なテーブル類が自動生成されないらしい。
-自動生成するには.env の auto_setup の値を 0 から 1 に変えれば良いらしい。
+
+調べてみるとデフォルトの状態だとメッセンジャーで必要なテーブル類が自動生成されないらしいです。
+自動生成するには.env の auto_setup の値を 0 から 1 に変えなくてはならないとの事。
 
 ```yml
 MESSENGER_TRANSPORT_DSN=doctrine://default?auto_setup=1
@@ -147,7 +149,7 @@ Symfony Profiler で確認するとメッセンジャーのキューにメール
 
 お次は問い合わせフォームを作っていきます。
 
-フォームと symfony の連携周りの話は [mako10](https://qiita.com/mako5656https://qiita.com/mako5656) さんの記事で事足りるので割愛させていただきます。
+フォームと symfony の連携周りの話は [mako10](https://qiita.com/mako5656https://qiita.com/mako5656) さんの記事が参考になるので省略させていただきます。
 https://qiita.com/mako5656/items/85b18f8e8fb8cb622f2b
 https://qiita.com/mako5656/items/0b6c28901cf0f7edeeaa
 
@@ -185,9 +187,10 @@ namespace App\Form\Model;
 
 class ContactModel
 {
-
+  // 問い合わせ内容(テキスト)
   protected $contactContent;
   /**
+   * 問い合わせ用の画像(ファイル)
    * @var UploadedFile[]
    */
   private array $image = [];
@@ -267,7 +270,7 @@ class ContactType extends AbstractType
 {% endblock %}
 ```
 
-「/contact」にアクセスするとフォームが表示されます。
+この状態で「/contact」にアクセスするとフォームが表示されます。
 ![4](/images/symfony/4.png)
 
 # メールテンプレートを使ってメールを送信する
@@ -306,6 +309,7 @@ class ContactController extends AbstractController
         // メールテンプレート
         ->textTemplate('emails/email.html.twig')
         // メールテンプレートにフォームから送られてきた内容を渡す
+        // ここではserialize可能な物しか渡せない
         ->context([
           'contact' => $contact,
       ]);
@@ -347,7 +351,7 @@ https://github.com/symfony/symfony/issues/7238
 
 # UploadedFile とはなんぞや？
 
-調べるとフォームからアップロードされたファイルの情報がまとまっている奴らしい。
+調べるとフォームからアップロードされたファイルの情報がまとまっている物らしいです。
 https://runebook.dev/ja/docs/symfony/symfony/component/httpfoundation/file/uploadedfile
 
 # UploadedFile のシリアライズはどこでされている?
@@ -420,5 +424,5 @@ class ContactModel
 
 # 最後に
 
-初めましてのフレームワークは呪文が多く大変です。
-同じような状況の人の助けになれば幸いです。
+初めましてのフレームワークは呪文が多く慣れるまでが大変です。
+同じような状況の人の助けになれば幸いです！
