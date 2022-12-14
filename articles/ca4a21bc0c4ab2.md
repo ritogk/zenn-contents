@@ -11,12 +11,12 @@ published_at: 2022-12-18 00:01
 
 # はじめに
 
-実務で symfony を使ってメール送信を実装する機会がありました。
+つい最近 symfony を使ってメール送信を実装する機会がありました。
 その時にスラスラ実装できなくてしんどい思いをしたのでつまりポイント等をまとめてました。
 
 # 今回のゴール
 
-問い合わせフォームから送信された内容を外部ファイルに切り出したメールテンプレートに埋め込み、ファイルを添付してメッセンジャーのキューへ送信する所までをゴールとします。
+問い合わせフォームを作り、そこから送信された内容を外部ファイルに切り出したメールテンプレートに埋め込めこみ、更にファイルを添付してメッセンジャーのキューへ登録する所までをゴールとします。
 https://github.com/ritogk/symfony_mail_test
 
 # 動作環境
@@ -82,13 +82,21 @@ messenger_messages テーブルがないと怒られました。
 migrations ディレクトリ内に「messenger_messages」のテーブル定義は存在しませんしデータベース内にも存在しません。
 
 ```bash
+$ ls -la migrations
+total 8
+drwxr-xr-x  2 ubuntu ubuntu 4096 Dec 11 10:52 .
+drwxr-xr-x 12 ubuntu ubuntu 4096 Dec 11 10:53 ..
+-rw-r--r--  1 ubuntu ubuntu    0 Dec 10 20:48 .gitignore
+```
+
+```bash
 MariaDB [symfony_mailer]> show tables;
 Empty set (0.000 sec)
 ```
 
 なにこれどうすればいいの・・・？
 
-調べてみるとメッセンジャーを動かせば自動でテーブルが作られるらしいです。
+調べてみるとメッセンジャーへのトランスポートを通じて何かしらの処理を行うと自動でテーブルが作られるらしいです。
 https://github.com/symfony/symfony/issues/46609
 
 メッセンジャーのインストールを行います。
@@ -97,7 +105,7 @@ https://github.com/symfony/symfony/issues/46609
 $ composer require symfony/messenger
 ```
 
-メッセンジャーを起動してみる
+メッセンジャーを起動してみます。
 
 ```bash
 $ php bin/console messenger:consume async
@@ -108,7 +116,7 @@ $ php bin/console messenger:consume async
 
 また似たような内容で怒られました。
 
-調べてみるとデフォルトの状態だとメッセンジャーで必要なテーブル類が自動生成されないらしいです。
+調べてみるとデフォルトの状態だとメッセンジャーで使用するテーブルが自動生成されないらしいです。
 自動生成するには.env の auto_setup の値を 0 から 1 に変えなくてはならないとの事。
 
 ```yml
@@ -128,6 +136,7 @@ $ php bin/console messenger:consume async
 メッセンジャーが起動しました！
 
 messenger_messages テーブルも作られていますね。
+※まだメール送信をしていないので、メッセンジャーのトランスポートを通じて処理は行っていないような気がしますがヨシとします。
 
 ```yaml
 MariaDB [symfony_mailer]> show tables;
@@ -140,10 +149,9 @@ MariaDB [symfony_mailer]> show tables;
 ```
 
 再度「/email」にアクセスしてメールを送信してみます。
-
-Symfony Profiler で確認するとメッセンジャーのキューにメールが登録されていますね!
+Symfony Profiler で確認するとメッセンジャーのトランスポートを通じてキューにメールが登録されていますね!
 ![3](/images/symfony/3.png)
-今回はやりませんがこの状態で.env の MAILER_DSN を指定すれば正常にメールが送信されるはずです。
+今回はやりませんがこの状態で.env の MAILER_DSN を指定すれば正しくメールが送信されるはずです。
 
 # 問い合わせフォームを作成する
 
@@ -306,10 +314,7 @@ class ContactController extends AbstractController
         ->from('hello@example.com')
         ->to('you@example.com')
         ->subject('symfony mail test title')
-        // メールテンプレート
         ->textTemplate('emails/email.html.twig')
-        // メールテンプレートにフォームから送られてきた内容を渡す
-        // ここではserialize可能な物しか渡せない
         ->context([
           'contact' => $contact,
       ]);
@@ -346,7 +351,7 @@ class ContactController extends AbstractController
 
 メール送信時に UploadedFile がシリアライズできずにエラーが発生しました。
 
-UploadedFile はシリアライズしちゃだめらしいですね。
+UploadedFile のシリアライズは行ってはダメらしいですね。
 https://github.com/symfony/symfony/issues/7238
 
 # UploadedFile とはなんぞや？
@@ -356,9 +361,21 @@ https://runebook.dev/ja/docs/symfony/symfony/component/httpfoundation/file/uploa
 
 # UploadedFile のシリアライズはどこでされている?
 
-調べるとメールテンプレの twig にコンテキストを渡している所でシリアライズされるらしいです。
+調べるとメールテンプレの twig に必要な情報を渡している所でシリアライズされるらしいです。
 公式ドキュメントをよく見るとシリアライズできる物のみ渡せと書いてありますね。
 ![6](/images/symfony/6.png)
+
+```php
+$email = (new TemplatedEmail())
+        ->from('hello@example.com')
+        ->to('you@example.com')
+        ->subject('symfony mail test title')
+        ->textTemplate('emails/email.html.twig')
+        // contextにはシリアライズ可能な物しか渡してはいけない。
+        ->context([
+          'contact' => $contact,
+      ]);
+```
 
 公式ドキュメント通りにファイルをシリアライズの対象から外してみる。
 
@@ -424,5 +441,5 @@ class ContactModel
 
 # 最後に
 
-初めましてのフレームワークは呪文が多く慣れるまでが大変です。
-同じような状況の人の助けになれば幸いです！
+symfony 初心者がメール送信できる所までを実装しました!
+どこかの誰かのお役に立てれば幸いです!
