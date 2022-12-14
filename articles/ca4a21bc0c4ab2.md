@@ -99,7 +99,7 @@ Empty set (0.000 sec)
 調べてみるとメッセンジャーへのトランスポートを通じて何かしらの処理を行うと自動でテーブルが作られるらしいです。
 https://github.com/symfony/symfony/issues/46609
 
-メッセンジャーのインストールを行います。
+とりあえずメッセンジャーのインストールを行います。
 
 ```bash
 $ composer require symfony/messenger
