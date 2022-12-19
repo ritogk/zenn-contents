@@ -19,5 +19,8 @@
   "homepage": "https://github.com/ritogk/zenn-contents#readme",
   "dependencies": {
     "zenn-cli": "^0.1.106"
+  },
+  "devDependencies": {
+    "prettier-plugin-md-nocjsp": "^1.5.0"
   }
 }
