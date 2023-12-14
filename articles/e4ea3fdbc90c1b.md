@@ -1,7 +1,7 @@
 ---
 title: "魚類のためのクソ音楽プレイヤーアプリを作った"
 emoji: "🐟"
-type: "tech" # tech: 技術記事 / idea: アイデア
+type: "idea" # tech: 技術記事 / idea: アイデア
 topics: ["Javascript", "TypeScript", "vue", "WebAudioAPI", "frontend"]
 published: true
 published_at: 2023-12-21 00:01
