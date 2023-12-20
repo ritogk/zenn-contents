@@ -1,5 +1,5 @@
 ---
-title: "魚類のためのクソ音楽プレイヤーアプリを作った"
+title: "魚のためのクソ音楽プレイヤーを作った"
 emoji: "🐟"
 type: "idea" # tech: 技術記事 / idea: アイデア
 topics: ["Javascript", "TypeScript", "vue", "WebAudioAPI", "frontend"]
@@ -19,20 +19,20 @@ published_at: 2023-12-21 00:01
 # 作ったもの
 
 楽曲を特定の魚のためだけに特化して再生できるアプリケーションです。
-https://fish-beat.homisoftware.net/
+https://fish-beat.homisoftware.net
 ![](/images/e4ea3fdbc90c1b/1.png)
 
 # 使い方
 
 1. 楽曲選択
-2. 特化したい動物を選択
+2. 動物を選択
 3. 再生ボタンを押す
-4. 端末の音量を`15倍`にする
+4. 端末の音量を「`15倍`」にする
 
 https://youtu.be/PLTEZnu7Mls?si=DYh3Ibywv2QvnILw
 個人的にブリの音が好きです。
 
-# 魚類の音の聞こえ方
+# 魚の音の聞こえ方
 
 多くの魚たちは2~3000hzの範囲でしか音が聞こえません。
 また魚によって周波数毎のdb感度が違ったりします。
@@ -42,9 +42,15 @@ https://youtu.be/PLTEZnu7Mls?si=DYh3Ibywv2QvnILw
 図で表すとこんな感じになります。
 ![](/images/e4ea3fdbc90c1b/2.png)
 
+# このアプリでしていること
+
+人間と魚の音の聞こえ方の差をとり、その差を増幅させたりしています。
+楽曲は人間ベースなので、その差を埋めてしまえば、たぶん魚好みの音になるのかなあと。
+エフェクターみたいな物だと思えばわかりやすいと思います。
+
 # 実装
 
-楽曲をWebAudioAPIで読み込ませ、魚介類毎に用意したBiquadFilterNodeで音を加工して再生しています。
+楽曲をWebAudioAPIで読み込ませ、魚毎に用意したBiquadFilterNodeで音を加工して再生しています。
 
 ## 金魚に最適化した音を作る
 
@@ -164,7 +170,7 @@ lastNode.connect(this._audioContext.destination)
 
 ## 悪い事を思いついた
 
-Web Audio Apiのゲインは最大で1541倍まで増幅できるらしい。
+Web Audio Apiのゲインの最大値は1541なので、単純に1541倍まで増幅できるらしい。
 なので、1541倍した音をユーザー操作に紐づけて再生させたら、ユーザーのスピーカーをぶっ壊す事ができるのではと思いました。
 ひよって400倍でためしたらブラウザが止めてくれました。やさしい。
 @[tweet](https://twitter.com/ritoweb0321/status/1732567921778655307?s=20)
@@ -173,7 +179,7 @@ Web Audio Apiのゲインは最大で1541倍まで増幅できるらしい。
 # おわりに
 
 はじめてのクソアプリ制作でした。
-これでよかったんだろうか。
+まったく価値のないアプリで悩んでいる時間がよくわからなくて楽しかったです。
 
 完成したコードはこちらです。
 https://github.com/ritogk/fish-beat
